@@ -1,2 +1,2 @@
-[ ] Architecture diagram(try figma mcp)
-[ ] the dark theme looks horrendous
+[ ] Architecture diagram (try figma mcp)
+[ ] pynq board testing

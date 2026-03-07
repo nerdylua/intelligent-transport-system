@@ -34,14 +34,14 @@ export function AppSidebar() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <Sidebar className="border-r border-zinc-200 bg-zinc-50/50">
-      <SidebarHeader className="px-4 py-5 border-b border-zinc-100">
+    <Sidebar className="border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#09090b]">
+      <SidebarHeader className="px-4 py-5 border-b border-zinc-100 dark:border-zinc-800">
         <Link href="/" className="flex items-center gap-3 w-full group">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#18181b]">
-            <div className="h-2 w-2 rounded-sm bg-white/20"></div>
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#18181b] dark:bg-white">
+            <div className="h-2 w-2 rounded-sm bg-white/20 dark:bg-black/20"></div>
           </div>
           <div className="flex flex-col flex-1 truncate">
-            <span className="text-[13px] font-semibold tracking-tight text-zinc-900 truncate">ITS System</span>
+            <span className="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">ITS System</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -51,7 +51,6 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                // If it's the home link but we are on a dashboard page, don't show active state for home.
                 const isActive = item.href === "/"
                   ? pathname === "/"
                   : pathname.startsWith(item.href)
@@ -62,12 +61,12 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive}
                       className={`h-9 px-2.5 my-0.5 rounded-lg transition-colors ${isActive
-                        ? "bg-zinc-200/50 text-zinc-900 font-medium"
-                        : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                        ? "bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 font-medium"
+                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                         }`}
                     >
                       <Link href={item.href} className="flex items-center gap-3">
-                        <item.icon className={`h-4 w-4 ${isActive ? 'text-zinc-900' : 'text-zinc-400'}`} />
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'}`} />
                         <span className="text-[13px] tracking-tight">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -79,15 +78,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-zinc-100">
-        <div className="flex items-center justify-between rounded-lg bg-white p-2 border border-zinc-200 shadow-2xs">
+      <SidebarFooter className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex items-center justify-between rounded-lg bg-white dark:bg-zinc-900/50 p-2 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
           <div className="flex items-center gap-2">
             {theme === "dark" ? (
-              <Moon className="h-3.5 w-3.5 text-zinc-500" />
+              <Moon className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
             ) : (
-              <Sun className="h-3.5 w-3.5 text-zinc-500" />
+              <Sun className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
             )}
-            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Theme</span>
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Theme</span>
           </div>
           <Switch
             checked={theme === "dark"}
