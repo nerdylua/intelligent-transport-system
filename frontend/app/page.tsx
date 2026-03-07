@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Box, Terminal, LineChart, ChevronDown, Check } from "lucide-react";
+import { Box, Terminal, LineChart, Check } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button"
 
+const animatedWords = [
+  "Traffic Simulation",
+  "Network Analysis",
+  "Urban Mobility",
+  "Route Optimization",
+];
+
 export default function Home() {
-  const animatedWords = [
-    "Traffic Simulation",
-    "Network Analysis",
-    "Urban Mobility",
-    "Route Optimization",
-  ];
   const [currentWord, setCurrentWord] = useState(0);
 
   useEffect(() => {

@@ -39,6 +39,7 @@ export function usePipelineWs(url: string) {
   const [metrics, setMetrics] = useState<Record<string, MetricPoint[]>>({})
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const connectRef = useRef<(() => void) | undefined>(undefined)
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -50,7 +51,7 @@ export function usePipelineWs(url: string) {
     ws.onclose = () => {
       setConnected(false)
       wsRef.current = null
-      reconnectTimer.current = setTimeout(connect, 3000)
+      reconnectTimer.current = setTimeout(() => connectRef.current?.(), 3000)
     }
 
     ws.onerror = () => ws.close()
@@ -100,6 +101,10 @@ export function usePipelineWs(url: string) {
 
     wsRef.current = ws
   }, [url])
+
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   useEffect(() => {
     connect()

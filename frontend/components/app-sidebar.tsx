@@ -4,13 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
-  Home,
   Activity,
   Terminal,
   View,
   Sun,
   Moon,
-  Box,
 } from "lucide-react"
 import {
   Sidebar,

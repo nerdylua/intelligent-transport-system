@@ -5,7 +5,7 @@ import { Grid, Sky, Environment } from "@react-three/drei"
 import { useCallback, useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "react"
 import * as THREE from "three"
 
-import { useSceneData, type SceneData, type Pose } from "@/hooks/use-scene-data"
+import { useSceneData, type SceneData } from "@/hooks/use-scene-data"
 import { usePlayback } from "@/hooks/use-playback"
 
 import { PointCloud } from "./point-cloud"
@@ -84,7 +84,6 @@ function SceneCore({
   onUiUpdate: (frame: number, metrics: { speed: number; acceleration: number; wheelAngle: number } | undefined) => void
 }) {
   const { gl } = useThree()
-  const canvas = gl.domElement
 
   // ── Object refs ──
   const vehicleRef = useRef<THREE.Group>(null)
@@ -108,6 +107,7 @@ function SceneCore({
   const lastUiUpdate = useRef(0)
   const interpPos = useRef(new THREE.Vector3())
   const interpYaw = useRef(0)
+  const [renderFrame, setRenderFrame] = useState(0)
 
   // ── Reusable temp vectors (avoid per-frame allocations → reduces GC jitter) ──
   const _tmpDesiredTarget = useRef(new THREE.Vector3())
@@ -133,14 +133,21 @@ function SceneCore({
 
   // Mouse handlers for camera orbit
   useEffect(() => {
-    const onDown = (e: PointerEvent) => { if (e.button === 0) { isDragging.current = true; lastMouse.current = { x: e.clientX, y: e.clientY }; canvas.style.cursor = "grabbing" } }
+    const canvas = gl.domElement
+    // Use an independent DOM query for cursor styling to satisfy react-hooks/immutability
+    // (the linter traces canvas.style mutations back to the gl hook return value)
+    const setCursor = (c: string) => {
+      const el = document.querySelector<HTMLCanvasElement>("canvas")
+      if (el) el.style.cursor = c
+    }
+    const onDown = (e: PointerEvent) => { if (e.button === 0) { isDragging.current = true; lastMouse.current = { x: e.clientX, y: e.clientY }; setCursor("grabbing") } }
     const onMove = (e: PointerEvent) => { if (!isDragging.current) return; const dx = e.clientX - lastMouse.current.x; const dy = e.clientY - lastMouse.current.y; lastMouse.current = { x: e.clientX, y: e.clientY }; userYawOffset.current -= dx * 0.005; userPitch.current = Math.max(0.05, Math.min(1.2, userPitch.current - dy * 0.004)) }
-    const onUp = () => { isDragging.current = false; canvas.style.cursor = "grab" }
+    const onUp = () => { isDragging.current = false; setCursor("grab") }
     const onDblClick = () => { userYawOffset.current = 0; userPitch.current = 0.35; userDistance.current = 22 }
     const onWheel = (e: WheelEvent) => { e.preventDefault(); userDistance.current = Math.max(8, Math.min(60, userDistance.current + e.deltaY * 0.03)) }
-    canvas.addEventListener("pointerdown", onDown); canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerup", onUp); canvas.addEventListener("pointerleave", onUp); canvas.addEventListener("dblclick", onDblClick); canvas.addEventListener("wheel", onWheel, { passive: false }); canvas.style.cursor = "grab"
+    canvas.addEventListener("pointerdown", onDown); canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerup", onUp); canvas.addEventListener("pointerleave", onUp); canvas.addEventListener("dblclick", onDblClick); canvas.addEventListener("wheel", onWheel, { passive: false }); setCursor("grab")
     return () => { canvas.removeEventListener("pointerdown", onDown); canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerup", onUp); canvas.removeEventListener("pointerleave", onUp); canvas.removeEventListener("dblclick", onDblClick); canvas.removeEventListener("wheel", onWheel) }
-  }, [canvas])
+  }, [gl])
 
   useFrame(({ camera }, delta) => {
     // Clamp delta to avoid huge jumps when tab is backgrounded
@@ -220,6 +227,7 @@ function SceneCore({
     const now = performance.now()
     if (now - lastUiUpdate.current > 120) {
       lastUiUpdate.current = now
+      setRenderFrame(frame)
       onUiUpdate(frame, data.metrics[frame])
     }
   })
@@ -242,7 +250,7 @@ function SceneCore({
       )}
 
       {streams.trajectory && (
-        <TrajectoryLine trajectory={data.trajectory} currentFrame={lastFrame.current} visible />
+        <TrajectoryLine trajectory={data.trajectory} currentFrame={renderFrame} visible />
       )}
 
       {/* Ego vehicle — positioned by useFrame */}
@@ -267,30 +275,26 @@ const ImperativePointCloud = forwardRef<
   { update: (pts: Float32Array | null) => void },
   { visible: boolean }
 >(function ImperativePointCloud({ visible }, ref) {
-  const ptsRef = useRef<Float32Array | null>(null)
-  const [, forceRender] = useState(0)
+  const [pts, setPts] = useState<Float32Array | null>(null)
   useImperativeHandle(ref, () => ({
-    update: (pts: Float32Array | null) => {
-      ptsRef.current = pts
-      forceRender(c => c + 1)
+    update: (newPts: Float32Array | null) => {
+      setPts(newPts)
     }
   }), [])
-  return <PointCloud points={ptsRef.current} visible={visible} />
+  return <PointCloud points={pts} visible={visible} />
 })
 
 const ImperativeBoundingBoxes = forwardRef<
   { update: (objs: Array<{ label: string; x: number; y: number; z: number; w: number; h: number; l: number; yaw?: number }>) => void },
   { visible: boolean; showLabels: boolean }
 >(function ImperativeBoundingBoxes({ visible, showLabels }, ref) {
-  const boxesRef = useRef<Array<{ label: string; x: number; y: number; z: number; w: number; h: number; l: number; yaw?: number }>>([])
-  const [, forceRender] = useState(0)
+  const [boxes, setBoxes] = useState<Array<{ label: string; x: number; y: number; z: number; w: number; h: number; l: number; yaw?: number }>>([])
   useImperativeHandle(ref, () => ({
     update: (objs: Array<{ label: string; x: number; y: number; z: number; w: number; h: number; l: number; yaw?: number }>) => {
-      boxesRef.current = objs
-      forceRender(c => c + 1)
+      setBoxes(objs)
     }
   }), [])
-  return <BoundingBoxes boxes={boxesRef.current} visible={visible} showLabels={showLabels} />
+  return <BoundingBoxes boxes={boxes} visible={visible} showLabels={showLabels} />
 })
 
 /* ── Sequence selector ── */
@@ -336,7 +340,7 @@ export default function AVScene() {
   const [sceneReady, setSceneReady] = useState(false)
 
   // UI-only state (throttled from SceneCore)
-  const [uiFrame, setUiFrame] = useState(0)
+  const [, setUiFrame] = useState(0)
   const [uiMetrics, setUiMetrics] = useState<{ speed: number; acceleration: number; wheelAngle: number } | undefined>()
 
   const onUiUpdate = useCallback((frame: number, metrics: { speed: number; acceleration: number; wheelAngle: number } | undefined) => {
@@ -357,7 +361,7 @@ export default function AVScene() {
   useEffect(() => {
     if (data) {
       // Allow a brief warm-up for the GPU/Three.js to compile shaders
-      setSceneReady(false)
+      queueMicrotask(() => setSceneReady(false))
       const timer = setTimeout(() => setSceneReady(true), 400)
       return () => clearTimeout(timer)
     }

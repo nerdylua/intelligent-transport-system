@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useMemo } from "react"
+import { memo } from "react"
 import { Html } from "@react-three/drei"
 import * as THREE from "three"
 import type { SceneObject } from "@/hooks/use-scene-data"

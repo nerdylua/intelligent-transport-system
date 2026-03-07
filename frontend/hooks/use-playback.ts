@@ -17,8 +17,10 @@ export function usePlayback(totalFrames: number, fps: number = 10) {
   useEffect(() => {
     timeRef.current = 0
     playingRef.current = false
-    setUiFrame(0)
-    setPlaying(false)
+    queueMicrotask(() => {
+      setUiFrame(0)
+      setPlaying(false)
+    })
   }, [totalFrames, fps])
 
   const lastUiUpdate = useRef(0)

@@ -503,7 +503,6 @@ const tickRoundabout: TickFn = (vehicles, _frame, W, H) => {
 
   for (const v of vehicles) {
     const spd = v.speed * SPEED
-    const prevProgress = v.progress
 
     if (v.phase === "approach") {
       v.progress += spd
@@ -619,7 +618,6 @@ const drawHighwayMerge: DrawRoadsFn = (ctx, W, H) => {
 const spawnHighwayMerge: SpawnFn = (cfg) => {
   const vehicles: Vehicle[] = []
   let id = 0
-  const baseSpeed = 0.5 + Math.random() * 0.15
   cfg.vehicleCounts.forEach((count, lane) => {
     for (let i = 0; i < count; i++) {
       vehicles.push({

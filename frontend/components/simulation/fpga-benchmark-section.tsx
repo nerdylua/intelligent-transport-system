@@ -4,22 +4,16 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Zap, Cpu, Timer, Activity } from "lucide-react"
+import { Zap, Cpu, Timer } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area,
+  AreaChart, Area,
 } from "recharts"
 
 const CPU_AVG_MS = 454.7
 const FPGA_AVG_MS = 0.164
 const SPEEDUP = 2779
 const TOTAL_SCANS = 200
-
-const perScanSample = Array.from({ length: 20 }, (_, i) => ({
-  scan: (i + 1) * 10,
-  cpu: 400 + Math.random() * 140,
-  fpga: 0.14 + Math.random() * 0.05,
-}))
 
 const timelineData = Array.from({ length: 50 }, (_, i) => ({
   scan: i * 4,

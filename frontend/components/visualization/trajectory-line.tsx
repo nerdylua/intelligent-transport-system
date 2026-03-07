@@ -167,13 +167,13 @@ const CenterLine = memo(function CenterLine({
   opacity: number
   dashed?: boolean
 }) {
-  if (points.length < 2) return null
-
   // Raise center line slightly above ribbon
   const raised = useMemo(() =>
     points.map((p): [number, number, number] => [p[0], p[1] + 0.01, p[2]]),
     [points]
   )
+
+  if (points.length < 2) return null
 
   return (
     <Line

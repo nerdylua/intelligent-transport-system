@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useState } from "react"
 import * as THREE from "three"
 
 interface GroundPlaneProps {
@@ -8,7 +8,7 @@ interface GroundPlaneProps {
 }
 
 export function GroundPlane({ visible }: GroundPlaneProps) {
-    const texture = useMemo(() => {
+    const [texture] = useState(() => {
         // Create a subtle asphalt-like noise texture procedurally
         const size = 512
         const canvas = document.createElement("canvas")
@@ -47,7 +47,7 @@ export function GroundPlane({ visible }: GroundPlaneProps) {
         tex.repeat.set(40, 40)
         tex.anisotropy = 4
         return tex
-    }, [])
+    })
 
     if (!visible) return null
 
