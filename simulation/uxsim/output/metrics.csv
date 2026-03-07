@@ -1,0 +1,3 @@
+mode,avg_speed_mps,avg_travel_time_s,avg_delay_s,delay_ratio,trips_completed,trips_total,best_training_episode,best_training_delay
+fixed,1.36,569.89,417.08,0.732,1960,8090,,
+adaptive_dql,2.67,459.4,304.48,0.663,4980,9110,19.0,72.6

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <!-- Vehicle type definitions -->
+    <vType id="ego" length="4.5" minGap="2.0" maxSpeed="13.89" color="1,0,0" guiShape="passenger"/>
+    <vType id="traffic" length="4.5" minGap="2.0" maxSpeed="13.89" color="0,0.5,1" guiShape="passenger"/>
+
+    <!-- Routes through the intersection -->
+    <route id="r_WE" edges="W_in WC CE E_out"/>
+    <route id="r_EW" edges="E_in EC CW W_out"/>
+    <route id="r_NS" edges="N_in NC CS S_out"/>
+    <route id="r_SN" edges="S_in SC CN N_out"/>
+
+    <!-- Traffic flows (must come before individual vehicles for sort order) -->
+    <flow id="flow_WE" type="traffic" route="r_WE" begin="0" end="120" period="4" departSpeed="random"/>
+    <flow id="flow_EW" type="traffic" route="r_EW" begin="0" end="120" period="5" departSpeed="random"/>
+    <flow id="flow_NS" type="traffic" route="r_NS" begin="0" end="120" period="6" departSpeed="random"/>
+    <flow id="flow_SN" type="traffic" route="r_SN" begin="0" end="120" period="6" departSpeed="random"/>
+
+    <!-- Ego vehicle: drives west to east, departs at t=5 -->
+    <vehicle id="ego_0" type="ego" route="r_WE" depart="5.0" departSpeed="8.0"/>
+</routes>

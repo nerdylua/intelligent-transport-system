@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <!-- East-West corridor -->
+    <node id="W_entry" x="-200.0" y="0.0" type="priority"/>
+    <node id="W_junc" x="-50.0"  y="0.0" type="priority"/>
+    <node id="center"  x="0.0"   y="0.0" type="traffic_light"/>
+    <node id="E_junc" x="50.0"   y="0.0" type="priority"/>
+    <node id="E_entry" x="200.0" y="0.0" type="priority"/>
+
+    <!-- North-South corridor -->
+    <node id="N_entry" x="0.0" y="200.0"  type="priority"/>
+    <node id="N_junc" x="0.0" y="50.0"   type="priority"/>
+    <node id="S_junc" x="0.0" y="-50.0"  type="priority"/>
+    <node id="S_entry" x="0.0" y="-200.0" type="priority"/>
+</nodes>

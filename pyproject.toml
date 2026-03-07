@@ -1,0 +1,23 @@
+[project]
+name = "intelligent-transport-system"
+version = "0.1.0"
+description = "Intelligent Transport System project"
+readme = "readme.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "websockets>=11.0",
+    "uxsim",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "torch",
+    "gymnasium>=0.29.0",
+    "Pillow",
+    "traci",
+    "eclipse-sumo",
+]
+
+[tool.uv]
+required-environments = ["sys_platform == 'win32'", "sys_platform == 'linux'", "sys_platform == 'darwin'"]

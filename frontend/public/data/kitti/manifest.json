@@ -1,0 +1,14 @@
+[
+  {
+    "id": "0005",
+    "drive": "2011_09_26_drive_0005",
+    "label": "City",
+    "path": "/data/kitti/2011_09_26_drive_0005"
+  },
+  {
+    "id": "0093",
+    "drive": "2011_09_26_drive_0093",
+    "label": "Residential",
+    "path": "/data/kitti/2011_09_26_drive_0093"
+  }
+]

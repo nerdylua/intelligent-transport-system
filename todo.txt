@@ -1,0 +1,2 @@
+[ ] Architecture diagram(try figma mcp)
+[ ] the dark theme looks horrendous
