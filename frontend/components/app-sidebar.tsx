@@ -20,6 +20,7 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
 
@@ -32,6 +33,7 @@ const navItems = [
 export function AppSidebar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   return (
     <Sidebar className="border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#09090b]">
@@ -65,7 +67,13 @@ export function AppSidebar() {
                         : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                         }`}
                     >
-                      <Link href={item.href} className="flex items-center gap-3">
+                      <Link
+                        href={item.href}
+                        className="flex items-center gap-3"
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false)
+                        }}
+                      >
                         <item.icon className={`h-4 w-4 ${isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'}`} />
                         <span className="text-[13px] tracking-tight">{item.title}</span>
                       </Link>
