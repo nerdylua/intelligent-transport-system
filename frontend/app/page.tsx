@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Lenis from "lenis";
 import { Box, Terminal, LineChart, Check } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button"
 
@@ -9,11 +10,31 @@ const animatedWords = [
   "Traffic Simulation",
   "Network Analysis",
   "Urban Mobility",
-  "Route Optimization",
+  "Route Planning",
 ];
 
 export default function Home() {
   const [currentWord, setCurrentWord] = useState(0);
+  const lenisRef = useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.1,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      touchMultiplier: 1.5,
+    });
+    lenisRef.current = lenis;
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,8 +45,18 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900 font-sans">
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.042) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.042) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+          maskImage: "linear-gradient(to bottom, black 0%, black 35%, transparent 72%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 35%, transparent 72%)",
+        }}
+      />
 
-      <nav className="flex h-16 items-center justify-between px-6 lg:px-12 bg-white relative border-b border-zinc-100">
+      <nav className="flex h-16 items-center justify-between px-6 lg:px-12 bg-white/94 backdrop-blur-[16px] relative border-b border-zinc-100 sticky top-0 z-40">
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2 text-zinc-900">
             <div className="flex h-6 w-6 items-center justify-center rounded bg-[#18181b]">
@@ -72,13 +103,13 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="flex-1">
-        <section className="pt-24 pb-16 text-center">
-          <div className="mx-auto max-w-[900px] px-6">
-            <p className="mb-4 text-[13px] font-medium text-zinc-500">
+      <main className="flex-1 relative z-[5]">
+        <section className="pt-[88px] pb-16 text-center">
+          <div className="mx-auto flex flex-col items-center px-6">
+            <p className="mb-7 text-[0.775rem] font-normal text-zinc-500 tracking-[-0.01em]">
               Next-gen <span className="font-semibold text-zinc-900">Intelligent Transport</span> Platform
             </p>
-            <h1 className="text-[3.5rem] leading-[1.05] tracking-[-0.04em] font-bold text-[#09090b] md:text-[4rem] flex flex-col items-center">
+            <h1 className="text-[clamp(2.75rem,5.8vw,4.4rem)] leading-[1.06] tracking-[-0.055em] font-bold text-[#09090b] max-w-[740px] mb-5 flex flex-col items-center">
               <span>FPGA-Accelerated</span>
               <span className="relative h-[1.1em] w-full overflow-hidden block">
                 {animatedWords.map((word, index) => (
@@ -98,24 +129,24 @@ export default function Home() {
                 ))}
               </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-[550px] text-[17px] text-zinc-500 leading-relaxed font-normal">
+            <p className="mx-auto max-w-[455px] text-[1.025rem] text-[#71717a] leading-[1.65] tracking-[-0.015em] font-normal mb-8">
               Run microscopic vehicle models, test decentralized AI routing, and evaluate smart intersections with ultra-low latency hardware acceleration.
             </p>
-            <div className="mt-8 flex justify-center gap-3 items-center">
-              <RainbowButton asChild className="rounded-lg h-auto px-4 py-2 text-[14px] font-medium">
+            <div className="flex justify-center gap-2.5 items-center mb-14">
+              <RainbowButton asChild className="rounded-lg h-auto px-[22px] py-[10px] text-[0.875rem] font-medium tracking-[-0.022em]">
                 <Link href="/simulation">
                   Start Simulation
                 </Link>
               </RainbowButton>
               <Link
                 href="#"
-                className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-[14px] font-medium text-zinc-900 shadow-2xs transition-all hover:bg-zinc-50"
+                className="rounded-lg border border-zinc-200 bg-white px-5 py-[10px] text-[0.875rem] font-normal text-zinc-900 tracking-[-0.018em] transition-all hover:border-[#a1a1aa] hover:bg-[#fafafa]"
               >
                 Read Paper
               </Link>
             </div>
 
-            <div className="mt-16 sm:mt-24 mx-auto w-full max-w-7xl min-h-[500px] lg:min-h-[700px] overflow-hidden rounded-2xl border border-zinc-200/60 bg-zinc-50 shadow-sm flex items-center justify-center relative ring-1 ring-zinc-900/5">
+            <div className="w-full max-w-[1020px] min-h-[500px] lg:min-h-[700px] overflow-hidden rounded-[13px] border border-zinc-300 bg-zinc-50 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_16px_rgba(0,0,0,0.05),0_24px_60px_rgba(0,0,0,0.08)] flex items-center justify-center relative transition-all duration-300 ease-out hover:border-zinc-400 hover:shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_20px_rgba(0,0,0,0.07),0_28px_70px_rgba(0,0,0,0.1)]">
               <div className="flex flex-col items-center justify-center gap-3 text-zinc-400">
                 <Box className="w-10 h-10 opacity-50" />
                 <span className="text-base font-medium tracking-tight">Model Architecture Image Placeholder</span>
@@ -146,7 +177,7 @@ export default function Home() {
                   Our hardware-accelerated infrastructure ensures your simulation telemetry reaches the control center fast. No queues, no delays - just instant stream processing.
                 </p>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full border border-[#09090b]">
                       <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 text-[#09090b]">
                         <path d="M4 12L10 18L20 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -154,7 +185,7 @@ export default function Home() {
                     </div>
                     <span className="text-[17px] text-zinc-900 tracking-tight">99.9% processing rate</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full border border-[#09090b]">
                       <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 text-[#09090b]">
                         <path d="M4 12L10 18L20 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -162,7 +193,7 @@ export default function Home() {
                     </div>
                     <span className="text-[17px] text-zinc-900 tracking-tight">Automatic retry on stream failures</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full border border-[#09090b]">
                       <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 text-[#09090b]">
                         <path d="M4 12L10 18L20 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -173,7 +204,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-600 via-orange-400 to-yellow-700 opacity-90 mix-blend-multiply blur-sm scale-110"></div>
                 <div className="absolute inset-0 bg-[#e68a35]/40 backdrop-blur-[2px]"></div>
 
@@ -217,7 +248,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm order-2 lg:order-1">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm order-2 lg:order-1 transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg">
                 <div className="absolute inset-0 border border-zinc-200/50 bg-[#fafafa]"></div>
 
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -252,15 +283,15 @@ export default function Home() {
                   Import complex road networks and run microscopic traffic simulations. Evaluate intelligent traffic light algorithms in fully reproducible environments.
                 </p>
                 <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     Micro-level vehicle decision making
                   </li>
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     Custom mobility demand generation
                   </li>
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     V2X communication analysis
                   </li>
@@ -290,7 +321,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-tr from-zinc-100 to-zinc-50 border border-zinc-200/50"></div>
 
                 <div className="absolute inset-0 flex flex-col justify-center items-center gap-6 z-10 p-12">
@@ -325,7 +356,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm order-2 lg:order-1">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm order-2 lg:order-1 transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg">
                 <div className="absolute inset-0 border border-zinc-200/50 bg-[#fafafa]"></div>
 
                 <div className="absolute inset-0 bg-[#09090b] opacity-5">
@@ -379,15 +410,15 @@ export default function Home() {
                   Deploy vision models directly to edge nodes with our optimized FPGA bitstreams. Achieve microsecond latency for mission-critical traffic analytics.
                 </p>
                 <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     Ultra-low latency sensor fusion
                   </li>
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     Parallel processing architecture
                   </li>
-                  <li className="flex items-center gap-3 text-[15px] text-zinc-600">
+                  <li className="flex items-center gap-3 text-[15px] text-zinc-600 rounded-lg px-2 py-1 -mx-2 transition-all duration-200 hover:bg-zinc-50 hover:translate-x-0.5">
                     <Check className="h-4 w-4 text-[#09090b]" />
                     Reduced power consumption at the edge
                   </li>
@@ -407,7 +438,7 @@ export default function Home() {
                   Enable intersections to negotiate traffic flow autonomously. Our distributed consensus algorithm reduces downtown congestion by up to 35%.
                 </p>
                 <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white shadow-sm">
+                  <div className="flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100">
                       <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-[#09090b]"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" /><path d="M12 5V3M12 21v-2M5 12H3m18 0h-2m-2.121-4.95l1.414-1.414M6.343 17.657l-1.414 1.414m12.728 0l1.414-1.414M6.343 6.343L4.929 4.929" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </div>
@@ -416,7 +447,7 @@ export default function Home() {
                       <p className="text-[13px] text-zinc-500 mt-1 leading-relaxed">Vehicles broadcast intentions to RSU nodes instantly upon entering the zone.</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white shadow-sm">
+                  <div className="flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100">
                       <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-[#09090b]"><path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" /><path d="M12 8L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </div>
@@ -428,7 +459,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-[#09090b]"></div>
 
                 <div className="absolute inset-0 flex items-center justify-center p-8 z-10">
