@@ -1,49 +1,12 @@
-"use client";
-
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Lenis from "lenis";
 import { Box, Terminal, LineChart, Check } from "lucide-react";
-import { RainbowButton } from "@/components/ui/rainbow-button"
-
-const animatedWords = [
-  "Traffic Simulation",
-  "Network Analysis",
-  "Urban Mobility",
-  "Route Planning",
-];
+import { RainbowButton } from "@/components/ui/rainbow-button";
+import { AnimatedWords } from "@/components/ui/animated-words";
+import { LenisScroll } from "@/components/ui/lenis-scroll";
 
 export default function Home() {
-  const [currentWord, setCurrentWord] = useState(0);
-  const lenisRef = useRef<Lenis | null>(null);
-
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      touchMultiplier: 1.5,
-    });
-    lenisRef.current = lenis;
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentWord((prev) => (prev + 1) % animatedWords.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
+    <LenisScroll>
     <div className="flex min-h-screen flex-col bg-white text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900 font-sans">
       <div
         className="pointer-events-none fixed inset-0 z-0"
@@ -111,23 +74,7 @@ export default function Home() {
             </p>
             <h1 className="text-[clamp(2.75rem,5.8vw,4.4rem)] leading-[1.06] tracking-[-0.055em] font-bold text-[#09090b] max-w-[740px] mb-5 flex flex-col items-center">
               <span>FPGA-Accelerated</span>
-              <span className="relative h-[1.1em] w-full overflow-hidden block">
-                {animatedWords.map((word, index) => (
-                  <span
-                    key={word}
-                    className={`absolute left-0 w-full text-center transition-all duration-700 ease-[cubic-bezier(0.65,0,0.35,1)] ${index === currentWord
-                      ? "opacity-100 translate-y-0"
-                      : index === (currentWord - 1 + animatedWords.length) % animatedWords.length
-                        ? "opacity-0 -translate-y-full"
-                        : "opacity-0 translate-y-full"
-                      }`}
-                  >
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-500">
-                      {word}
-                    </span>
-                  </span>
-                ))}
-              </span>
+              <AnimatedWords />
             </h1>
             <p className="mx-auto max-w-[455px] text-[1.025rem] text-[#71717a] leading-[1.65] tracking-[-0.015em] font-normal mb-8">
               Run microscopic vehicle models, test decentralized AI routing, and evaluate smart intersections with ultra-low latency hardware acceleration.
@@ -545,5 +492,6 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    </LenisScroll>
   );
 }
