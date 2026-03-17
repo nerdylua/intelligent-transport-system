@@ -1,2 +1,4 @@
-[ ] Architecture diagram (try figma mcp)
-[ ] pynq board testing
+[ ] Architecture diagram for landing page model placeholder (try figma mcp)
+[ ] Test slam cpu vs fpga (pynq board)
+[ ] reanalyze sumo (in simulation folder)
+[ ] reanalyze uxsim (in simulation folder)
