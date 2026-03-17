@@ -15,10 +15,13 @@ const FPGA_AVG_MS = 0.164
 const SPEEDUP = 2779
 const TOTAL_SCANS = 200
 
-const timelineData = Array.from({ length: 50 }, (_, i) => ({
-  scan: i * 4,
-  cpu: 350 + Math.sin(i / 5) * 80 + Math.random() * 60,
-}))
+const timelineData = Array.from({ length: 50 }, (_, i) => {
+  const pseudoRandom = Math.abs(Math.sin(i * 1234.5678));
+  return {
+    scan: i * 4,
+    cpu: 350 + Math.sin(i / 5) * 80 + pseudoRandom * 60,
+  };
+});
 
 function AnimatedCounter({ target, suffix, decimals = 0, duration = 2000 }: {
   target: number; suffix: string; decimals?: number; duration?: number

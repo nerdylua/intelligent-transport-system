@@ -5,6 +5,15 @@ import { Grid, Sky, Environment } from "@react-three/drei"
 import { useCallback, useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "react"
 import * as THREE from "three"
 
+if (typeof console !== "undefined") {
+  const originalWarn = console.warn
+  console.warn = (...args: any[]) => {
+    if (typeof args[0] === "string" && args[0].includes("THREE.Clock")) return
+    if (typeof args[0] === "string" && args[0].includes("PCFSoftShadowMap")) return
+    originalWarn(...args)
+  }
+}
+
 import { useSceneData, type SceneData } from "@/hooks/use-scene-data"
 import { usePlayback } from "@/hooks/use-playback"
 
@@ -391,7 +400,7 @@ export default function AVScene() {
         camera={{ position: [0, 12, -20], fov: 55, near: 0.1, far: 1000 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         dpr={[1, 1.5]}
-        shadows
+        shadows={{ type: THREE.PCFShadowMap }}
         frameloop="always"
       >
         <SceneCore

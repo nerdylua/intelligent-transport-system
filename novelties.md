@@ -37,19 +37,8 @@ Most FPGA SLAM papers test on a single CARMEN dataset and stop there. This syste
 This lets you decouple sensor artifacts from algorithm correctness — validate CSM on clean synthetic data, stress-test on noisy real data. It also makes the system fully reproducible without physical LiDAR hardware, which is a meaningful contribution for an embedded systems project.
 
 
-## 5. XVIZ Protocol Output — Production-Grade Visualization
+## 5. We can say that the visualization endpoint computes the slam and renders the ui so fast due to our hybrid framework, else it would take significantly more time
 
-Standard academic SLAM output is a matplotlib 2D plot. This implementation goes further:
-
-- Numpy pose arrays and occupancy grids from the FPGA are serialized to **JSON / XVIZ protocol**
-- XVIZ (developed by Uber ATG) is the streaming visualization standard used by production AV teams, now part of the AVS ecosystem
-- Renders in a **web-based 3D viewer** (Streetscape.gl / AVS Studio) as time-indexed pose streams and map primitives
-
-```
-FPGA output (numpy)
-    → XVIZ Frame (pose + map as JSON primitives)
-    → Streetscape.gl / AVS web viewer
-    → Real-time 3D trajectory + occupancy map
 ```
 
 No academic FPGA SLAM paper at this level pipes output into an AV-grade visualization stack. This single design decision makes the full pipeline — real/synthetic sensor input → embedded FPGA compute → industry-standard visualization — architecturally resemble a production autonomous navigation system, which is the strongest novelty argument.
