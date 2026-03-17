@@ -1,4 +1,4 @@
 [ ] Architecture diagram for landing page model placeholder (try figma mcp)
-[ ] Test slam cpu vs fpga (pynq board)
+[ ] Test slam cpu vs fpga (pynq board) # the speedup value is way wrong, fix after testing everywhere
 [ ] reanalyze sumo (in simulation folder)
 [ ] reanalyze uxsim (in simulation folder)
