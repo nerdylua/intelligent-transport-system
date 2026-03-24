@@ -34,7 +34,7 @@ export default function Home() {
             href="#"
             className="text-[14px] font-medium text-zinc-600 transition-colors hover:text-zinc-900"
           >
-            Capabilities <span className="ml-1 text-[10px] text-zinc-400">v</span>
+            Capabilities
           </Link>
           <Link
             href="#"
@@ -46,7 +46,7 @@ export default function Home() {
             href="#"
             className="text-[14px] font-medium text-zinc-600 transition-colors hover:text-zinc-900"
           >
-            Documentation <span className="ml-1 text-[10px] text-zinc-400">v</span>
+            Documentation
           </Link>
           <Link
             href="#"
