@@ -146,7 +146,8 @@ const spawnIntersection: SpawnFn = (cfg) => {
         id: id++, x: 0, y: 0,
         angle: angles[lane],
         speed: 0.3 + Math.random() * 0.4,
-        isEgo: false, lane, progress: Math.random() * -0.3,
+        isEgo: false, lane,
+        progress: -0.05 - (i * 0.15),  // better initial spacing
       })
     }
   })
@@ -167,6 +168,50 @@ const posIntersection: PosFromProgressFn = (v, p, W, H) => {
     case 2: return [cx + hw, p * H]
     case 3: return [cx - hw, (1 - p) * H]
     default: return [0, 0]
+  }
+}
+
+// Simple car-following for intersection
+const tickIntersection: TickFn = (vehicles) => {
+  const BASE_SPEED = 0.004
+  const MIN_GAP = 0.08  // minimum gap between cars
+
+  // Group vehicles by lane
+  const byLane: Record<number, Vehicle[]> = {}
+  for (const v of vehicles) {
+    if (!byLane[v.lane]) byLane[v.lane] = []
+    byLane[v.lane].push(v)
+  }
+
+  // Sort each lane by progress (leader first)
+  for (const lane in byLane) {
+    byLane[lane].sort((a, b) => b.progress - a.progress)
+  }
+
+  // Update each vehicle
+  for (const v of vehicles) {
+    const laneVehicles = byLane[v.lane]
+    const myIndex = laneVehicles.indexOf(v)
+
+    // Check if there's a vehicle ahead in the same lane
+    let canMove = true
+    if (myIndex > 0) {
+      const ahead = laneVehicles[myIndex - 1]
+      const gap = ahead.progress - v.progress
+      if (gap < MIN_GAP) {
+        canMove = false
+      }
+    }
+
+    // Move if we have space
+    if (canMove) {
+      v.progress += v.speed * BASE_SPEED
+    }
+
+    // Wrap around
+    if (v.progress > 1.12) {
+      v.progress = -0.1
+    }
   }
 }
 
@@ -265,7 +310,7 @@ const spawnSignalised: SpawnFn = (cfg) => {
         angle: angles[lane],
         speed: 0.5 + Math.random() * 0.2,
         isEgo: false, lane,
-        progress: 0.05 + i * 0.055, // spread out along the approach
+        progress: 0.05 + i * 0.07,  // evenly spaced
         signalGroup: groups[lane],
       })
     }
@@ -295,8 +340,7 @@ const posSignalised: PosFromProgressFn = (v, p, W, H) => {
 const tickSignalised: TickFn = (vehicles, frame) => {
   const sig = getSignalState(frame)
   const MOVE_SPEED = 0.006
-  const CREEP_SPEED = 0.0002
-  const CAR_GAP = 0.04
+  const MIN_GAP = 0.055  // stricter minimum gap to prevent overlap
 
   // group by lane, sort by progress (leader first)
   const byLane: Record<number, Vehicle[]> = {}
@@ -313,38 +357,42 @@ const tickSignalised: TickFn = (vehicles, frame) => {
       const stopP = SIG_STOP[v.lane]
       const mySignal = v.signalGroup === "ns" ? sig.ns : sig.ew
       const isRed = mySignal === "red" || mySignal === "yellow"
-
-      // Has this car already passed the stop line?
       const pastStop = v.progress > stopP + 0.02
 
-      // Should stop for red: only if approaching and not yet past
-      const shouldStopForSignal = isRed && !pastStop && v.progress > 0
+      // Check car ahead - this is the primary collision prevention
+      let canMove = true
+      let maxSpeed = v.speed * MOVE_SPEED
 
-      // Check car ahead
-      let blockedByCar = false
       if (i > 0) {
         const ahead = byLane[lane][i - 1]
         const gap = ahead.progress - v.progress
-        if (gap < CAR_GAP) blockedByCar = true
+
+        // Strict collision prevention: don't move if too close
+        if (gap < MIN_GAP) {
+          canMove = false
+        } else if (gap < MIN_GAP * 1.5) {
+          // Slow down when getting close
+          maxSpeed = maxSpeed * 0.3
+        }
       }
 
-      if (blockedByCar) {
-        // creep slightly to close up but not overlap
-        v.progress += CREEP_SPEED
+      // Check red light
+      const shouldStopForSignal = isRed && !pastStop && v.progress > 0
+
+      if (!canMove) {
+        // Blocked by car ahead - don't move
+        v.progress += 0
       } else if (shouldStopForSignal) {
-        // decelerate as we approach the stop line, stop right at it
         const distToStop = stopP - v.progress
         if (distToStop < 0.01) {
-          // hold at stop line
-          v.progress += 0
-        } else if (distToStop < 0.05) {
-          v.progress += CREEP_SPEED * 2
+          v.progress += 0  // full stop at line
+        } else if (distToStop < 0.08) {
+          v.progress += maxSpeed * Math.min(0.3, distToStop / 0.08)  // slow approach
         } else {
-          // still approaching, slow down
-          v.progress += v.speed * MOVE_SPEED * Math.min(1, distToStop / 0.1)
+          v.progress += maxSpeed * 0.7
         }
       } else {
-        v.progress += v.speed * MOVE_SPEED
+        v.progress += maxSpeed
       }
 
       if (v.progress > 1.12) v.progress = -0.08
@@ -434,7 +482,7 @@ const spawnRoundabout: SpawnFn = (cfg) => {
         angle: initAngle,
         speed: 0.5 + Math.random() * 0.3,
         isEgo: false, lane: arm,
-        progress: -(0.05 + i * 0.18),
+        progress: -(0.1 + i * 0.2),  // better spacing
         phase: "approach",
         arm,
         ringEntry: ARM_RING_ANGLE[arm],
@@ -449,7 +497,7 @@ const spawnRoundabout: SpawnFn = (cfg) => {
     angle: 0, // pointing right (toward centre from west)
     speed: 0.6,
     isEgo: true, lane: 0,
-    progress: -0.15,
+    progress: -0.2,
     phase: "approach",
     arm: 0,
     ringEntry: ARM_RING_ANGLE[0], // PI
@@ -500,38 +548,102 @@ const posRoundabout: PosFromProgressFn = (v, _p, W, H) => {
 
 const tickRoundabout: TickFn = (vehicles, _frame, W, H) => {
   const SPEED = 0.007
+  const MIN_GAP = 0.15  // minimum gap to maintain
 
   for (const v of vehicles) {
+    let canMove = true
     const spd = v.speed * SPEED
 
+    // Check for vehicles ahead in same phase
     if (v.phase === "approach") {
-      v.progress += spd
-      if (v.progress >= 1.0) {
-        v.phase = "ring"
-        v.progress = 0
+      // Check vehicles ahead on same arm
+      for (const other of vehicles) {
+        if (other.id === v.id) continue
+        if (other.arm === v.arm && other.phase === "approach") {
+          if (other.progress > v.progress && other.progress - v.progress < MIN_GAP) {
+            canMove = false
+            break
+          }
+        }
+      }
+
+      // Near entry, check if ring is clear
+      if (canMove && v.progress > 0.8) {
+        const myEntry = v.ringEntry ?? 0
+        // Check for vehicles on the ring near our entry
+        for (const other of vehicles) {
+          if (other.id === v.id || other.phase !== "ring") continue
+          const otherAngle = (other.ringEntry ?? 0) - other.progress * (other.ringArc ?? Math.PI)
+          // Calculate angular distance
+          let angleDiff = myEntry - otherAngle
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2
+          // If vehicle is close on the ring, wait
+          if (Math.abs(angleDiff) < 0.4) {
+            canMove = false
+            break
+          }
+        }
       }
     } else if (v.phase === "ring") {
-      v.progress += spd
-      if (v.progress >= 1.0) {
-        v.phase = "exit"
-        v.progress = 0
+      const myAngle = (v.ringEntry ?? 0) - v.progress * (v.ringArc ?? Math.PI)
+      // Check other ring vehicles
+      for (const other of vehicles) {
+        if (other.id === v.id || other.phase !== "ring") continue
+        const otherAngle = (other.ringEntry ?? 0) - other.progress * (other.ringArc ?? Math.PI)
+
+        // Calculate angular distance on ring (clockwise direction)
+        let angleDiff = myAngle - otherAngle
+        while (angleDiff < 0) angleDiff += Math.PI * 2
+        while (angleDiff > Math.PI * 2) angleDiff -= Math.PI * 2
+
+        // If we're close behind another vehicle, slow down
+        if (angleDiff > 0 && angleDiff < 0.5) {
+          canMove = false
+          break
+        }
       }
     } else if (v.phase === "exit") {
-      v.progress += spd
-      if (v.progress >= 1.0) {
-        v.phase = "approach"
-        v.progress = -(0.05 + Math.random() * 0.2)
-        v.ringArc = ((1 + Math.floor(Math.random() * 3)) / 4) * Math.PI * 2
+      // Check vehicles ahead on same exit
+      for (const other of vehicles) {
+        if (other.id === v.id) continue
+        if (other.phase === "exit" && other.ringEntry === v.ringEntry && other.ringArc === v.ringArc) {
+          if (other.progress > v.progress && other.progress - v.progress < MIN_GAP) {
+            canMove = false
+            break
+          }
+        }
+      }
+    }
+
+    // Move if allowed
+    if (canMove) {
+      if (v.phase === "approach") {
+        v.progress += spd
+        if (v.progress >= 1.0) {
+          v.phase = "ring"
+          v.progress = 0
+        }
+      } else if (v.phase === "ring") {
+        v.progress += spd
+        if (v.progress >= 1.0) {
+          v.phase = "exit"
+          v.progress = 0
+        }
+      } else if (v.phase === "exit") {
+        v.progress += spd
+        if (v.progress >= 1.0) {
+          v.phase = "approach"
+          v.progress = -(0.05 + Math.random() * 0.2)
+          v.ringArc = ((1 + Math.floor(Math.random() * 3)) / 4) * Math.PI * 2
+        }
       }
     }
 
     // Compute angle from direction of travel
     const [curX, curY] = roundaboutPos(v, W, H)
-
-    // Use a small look-ahead within the SAME phase to avoid jumps
     const lookP = Math.min(v.progress + 0.02, 0.99)
     const lookV = { ...v, progress: lookP }
-    // Only look ahead within same phase (don't cross phase boundaries)
     const [nextX, nextY] = roundaboutPos(lookV, W, H)
 
     const dx = nextX - curX
@@ -623,9 +735,9 @@ const spawnHighwayMerge: SpawnFn = (cfg) => {
       vehicles.push({
         id: id++, x: 0, y: 0,
         angle: 0,
-        speed: 0.5 + Math.random() * 0.2, // all lanes similar speed
+        speed: 0.5 + Math.random() * 0.2,
         isEgo: false, lane,
-        progress: -(Math.random() * 0.3),
+        progress: -0.05 - (i * 0.12),  // better spacing
       })
     }
   })
@@ -634,7 +746,7 @@ const spawnHighwayMerge: SpawnFn = (cfg) => {
     angle: 0,
     speed: 0.55,
     isEgo: true, lane: 0,
-    progress: -0.1,
+    progress: -0.15,
   })
   return vehicles
 }
@@ -687,6 +799,67 @@ const posHighwayMerge: PosFromProgressFn = (v, p, W, H) => {
   }
 }
 
+// Highway merge collision detection
+const tickHighwayMerge: TickFn = (vehicles, _frame, W, H) => {
+  const BASE_SPEED = 0.004
+  const MIN_GAP = 0.09
+  const MERGE_ZONE_START = 0.5
+  const MERGE_ZONE_END = 0.65
+
+  // Group by lane
+  const byLane: Record<number, Vehicle[]> = {}
+  for (const v of vehicles) {
+    if (!byLane[v.lane]) byLane[v.lane] = []
+    byLane[v.lane].push(v)
+  }
+
+  // Sort each lane by progress
+  for (const lane in byLane) {
+    byLane[lane].sort((a, b) => b.progress - a.progress)
+  }
+
+  for (const v of vehicles) {
+    let canMove = true
+    const laneVehicles = byLane[v.lane]
+    const myIndex = laneVehicles.indexOf(v)
+
+    // Check vehicle ahead in same lane
+    if (myIndex > 0) {
+      const ahead = laneVehicles[myIndex - 1]
+      const gap = ahead.progress - v.progress
+      if (gap < MIN_GAP) {
+        canMove = false
+      }
+    }
+
+    // For ramp vehicles (lane 0), check merge zone conflicts
+    if (v.lane === 0 && v.progress > MERGE_ZONE_START && v.progress < MERGE_ZONE_END) {
+      // Check if lane 1 (bottom highway lane) has conflicting traffic
+      const lane1Vehicles = byLane[1] || []
+      for (const hw of lane1Vehicles) {
+        // Check if highway vehicle is in the merge zone area
+        if (hw.progress > 0.5 && hw.progress < 0.7) {
+          const dist = Math.abs(hw.progress - v.progress)
+          if (dist < MIN_GAP * 1.2) {
+            canMove = false
+            break
+          }
+        }
+      }
+    }
+
+    // Move if allowed
+    if (canMove) {
+      v.progress += v.speed * BASE_SPEED
+    }
+
+    // Wrap around
+    if (v.progress > 1.12) {
+      v.progress = -0.12
+    }
+  }
+}
+
 interface TopologyRenderer {
   draw: DrawRoadsFn
   pos: PosFromProgressFn
@@ -695,10 +868,10 @@ interface TopologyRenderer {
 }
 
 const TOPOLOGY_RENDERERS: Record<TopologyId, TopologyRenderer> = {
-  intersection: { draw: drawIntersection, pos: posIntersection, spawn: spawnIntersection },
+  intersection: { draw: drawIntersection, pos: posIntersection, spawn: spawnIntersection, tick: tickIntersection },
   signalised: { draw: drawSignalised, pos: posSignalised, spawn: spawnSignalised, tick: tickSignalised },
   roundabout: { draw: drawRoundabout, pos: posRoundabout, spawn: spawnRoundabout, tick: tickRoundabout },
-  "highway-merge": { draw: drawHighwayMerge, pos: posHighwayMerge, spawn: spawnHighwayMerge },
+  "highway-merge": { draw: drawHighwayMerge, pos: posHighwayMerge, spawn: spawnHighwayMerge, tick: tickHighwayMerge },
 }
 
 function useTrafficAnimation(
