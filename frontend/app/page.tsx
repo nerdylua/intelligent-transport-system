@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Box, Terminal, LineChart, Check } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
@@ -94,10 +95,14 @@ export default function Home() {
             </div>
 
             <div className="w-full max-w-[1020px] min-h-[500px] lg:min-h-[700px] overflow-hidden rounded-[13px] border border-zinc-300 bg-zinc-50 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_16px_rgba(0,0,0,0.05),0_24px_60px_rgba(0,0,0,0.08)] flex items-center justify-center relative transition-all duration-300 ease-out hover:border-zinc-400 hover:shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_20px_rgba(0,0,0,0.07),0_28px_70px_rgba(0,0,0,0.1)]">
-              <div className="flex flex-col items-center justify-center gap-3 text-zinc-400">
-                <Box className="w-10 h-10 opacity-50" />
-                <span className="text-base font-medium tracking-tight">Model Architecture Image Placeholder</span>
-              </div>
+              <Image
+                src="/arch.png"
+                alt="FPGA-centric model architecture: LiDAR acquisition through PYNQ acceleration to visualization"
+                fill
+                className="object-contain p-6 md:p-10"
+                sizes="(max-width: 1020px) 100vw, 1020px"
+                priority
+              />
             </div>
           </div>
         </section>
