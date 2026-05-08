@@ -3,6 +3,7 @@ import sys
 import argparse
 import math
 import numpy as np
+from xml.etree import ElementTree as ET
 
 if "SUMO_HOME" not in os.environ:
     sumo_candidates = [
@@ -16,6 +17,8 @@ if "SUMO_HOME" not in os.environ:
 
 if "SUMO_HOME" in os.environ:
     sys.path.append(os.path.join(os.environ["SUMO_HOME"], "tools"))
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 import traci
 import sumolib
@@ -129,12 +132,37 @@ def cast_rays(
     return distances
 
 
+def read_net_offset(sumocfg: str) -> tuple[float, float]:
+    """Return SUMO netOffset so ray-casting can use original map coordinates."""
+    try:
+        cfg_root = ET.parse(sumocfg).getroot()
+        net_node = cfg_root.find(".//net-file")
+        if net_node is None:
+            return 0.0, 0.0
+
+        net_path = net_node.attrib.get("value", "")
+        if not os.path.isabs(net_path):
+            net_path = os.path.join(os.path.dirname(sumocfg), net_path)
+
+        net_root = ET.parse(net_path).getroot()
+        location = net_root.find("location")
+        if location is None:
+            return 0.0, 0.0
+
+        raw_offset = location.attrib.get("netOffset", "0,0").split(",")
+        return float(raw_offset[0]), float(raw_offset[1])
+    except (OSError, ET.ParseError, ValueError, IndexError):
+        return 0.0, 0.0
+
+
 def run_simulation(sumocfg: str, output_path: str, use_gui: bool = False) -> None:
     sumocfg = os.path.abspath(sumocfg)
+    offset_x, offset_y = read_net_offset(sumocfg)
     sumo_bin_name = "sumo-gui" if use_gui else "sumo"
     sumo_bin = sumolib.checkBinary(sumo_bin_name)
     print(f"Using SUMO binary: {sumo_bin}")
     print(f"Using config: {sumocfg}")
+    print(f"Using net offset: ({offset_x:.2f}, {offset_y:.2f})")
     traci.start([sumo_bin, "-c", sumocfg, "--step-length", "0.1"])
 
     ego_id = "ego_0"
@@ -157,14 +185,14 @@ def run_simulation(sumocfg: str, output_path: str, use_gui: bool = False) -> Non
             ego_angle_deg = traci.vehicle.getAngle(ego_id)
             # SUMO angle: 0=north, clockwise. Convert to math angle: 0=east, counter-clockwise.
             ego_theta = math.radians(90.0 - ego_angle_deg)
-            ego_x, ego_y = ego_pos
+            ego_x, ego_y = ego_pos[0] - offset_x, ego_pos[1] - offset_y
 
             obstacles = []
             for vid in vehicle_ids:
                 if vid == ego_id:
                     continue
                 vpos = traci.vehicle.getPosition(vid)
-                obstacles.append(vpos)
+                obstacles.append((vpos[0] - offset_x, vpos[1] - offset_y))
 
             ranges = cast_rays(ego_x, ego_y, ego_theta, obstacles)
             timestamp = sim_time_base + step * 0.1

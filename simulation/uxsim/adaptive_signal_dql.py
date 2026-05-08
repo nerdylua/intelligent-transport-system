@@ -32,7 +32,7 @@ class TrafficSim(gym.Env):
     RL environment: 4-intersection grid.
     Action:  16 possibilities (2^4), each bit = which phase is green at each intersection.
     State:   16 values = queue count per incoming link at each intersection.
-    Reward:  negative change in total queued vehicles.
+    Reward:  decrease in total queued vehicles.
     """
 
     def __init__(self, seed: int | None = None):
@@ -48,6 +48,9 @@ class TrafficSim(gym.Env):
         self.reset()
 
     def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        if seed is not None:
+            self.seed_val = seed
         W = create_network(
             seed=self.seed_val,
             tmax=4000,
@@ -153,6 +156,12 @@ def train_dql(
     Train DQN signal controller.
     Returns (best_stats_dict, best_World_object).
     """
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on: {device}")
 
@@ -251,7 +260,7 @@ def train_dql(
     plt.figure(figsize=(8, 4))
     plt.plot(log_delays, "b.", alpha=0.4, markersize=3)
     window = min(20, len(log_delays))
-    if len(log_delays) >= window:
+    if window > 0 and len(log_delays) >= window:
         moving_avg = np.convolve(log_delays, np.ones(window) / window, mode="valid")
         plt.plot(range(window - 1, len(log_delays)), moving_avg, "r-", linewidth=2, label=f"{window}-ep moving avg")
     plt.xlabel("Episode")
@@ -266,11 +275,9 @@ def train_dql(
     # ── Replay one greedy episode with the trained policy for stats + animation ──
     print("\n  Replaying greedy episode with trained model...")
     env_replay = TrafficSim(seed=seed)
-    env_replay.reset()
-    env_replay.W.save_mode = 1
-    env_replay.W.show_mode = 1
     state_r, _ = env_replay.reset()
     env_replay.W.save_mode = 1
+    env_replay.W.show_mode = 1
     state_r = torch.tensor(state_r, dtype=torch.float32, device=device).unsqueeze(0)
     for t in count():
         action = select_action(state_r, greedy=True)

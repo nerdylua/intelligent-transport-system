@@ -1,9 +1,10 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Gauge, TrendingDown, TrendingUp, Users, Clock } from "lucide-react"
+import { Gauge, TrendingDown, TrendingUp, Users, Clock, type LucideIcon } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
@@ -16,7 +17,18 @@ interface SignalData {
   description: string
   comparisonData: { metric: string; fixed: number; adaptive: number }[]
   radarData: { metric: string; fixed: number; adaptive: number; fullMark: number }[]
-  statCards: { label: string; value: string; detail: string; icon: typeof TrendingUp; color: string }[]
+  statCards: { label: string; value: string; detail: string; icon: LucideIcon; color: string }[]
+}
+
+interface SimulationSummary {
+  uxsim?: {
+    rows?: Array<Record<string, number | string | null>>
+    comparison?: {
+      speed_improvement?: number | null
+      delay_reduction_pct?: number | null
+      completion_improvement?: number | null
+    } | null
+  }
 }
 
 const SIGNAL_DATA: Record<TopologyId, SignalData> = {
@@ -114,8 +126,85 @@ const SIGNAL_DATA: Record<TopologyId, SignalData> = {
   },
 }
 
+function num(value: number | string | null | undefined) {
+  if (typeof value === "number") return value
+  if (typeof value === "string" && value.trim() !== "") return Number(value)
+  return undefined
+}
+
+function formatNumber(value: number | undefined, digits = 0) {
+  if (value === undefined || Number.isNaN(value)) return "-"
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  })
+}
+
+function buildDataBackedSignal(base: SignalData, summary: SimulationSummary | null): SignalData {
+  const rows = summary?.uxsim?.rows ?? []
+  const fixed = rows.find((row) => row.mode === "fixed")
+  const adaptive = rows.find((row) => row.mode === "adaptive_dql")
+  if (!fixed || !adaptive) return base
+
+  const fixedSpeed = num(fixed.avg_speed_mps)
+  const adaptiveSpeed = num(adaptive.avg_speed_mps)
+  const fixedDelay = num(fixed.avg_delay_s)
+  const adaptiveDelay = num(adaptive.avg_delay_s)
+  const fixedTrips = num(fixed.trips_completed)
+  const adaptiveTrips = num(adaptive.trips_completed)
+  const fixedTotal = num(fixed.trips_total)
+  const adaptiveTotal = num(adaptive.trips_total)
+
+  const speedImprovement = summary?.uxsim?.comparison?.speed_improvement
+    ?? (fixedSpeed && adaptiveSpeed ? adaptiveSpeed / fixedSpeed : undefined)
+  const delayReduction = summary?.uxsim?.comparison?.delay_reduction_pct
+    ?? (fixedDelay && adaptiveDelay ? ((fixedDelay - adaptiveDelay) / fixedDelay) * 100 : undefined)
+  const fixedCompletionPct = fixedTrips && fixedTotal ? (fixedTrips / fixedTotal) * 100 : 0
+  const adaptiveCompletionPct = adaptiveTrips && adaptiveTotal ? (adaptiveTrips / adaptiveTotal) * 100 : 0
+  const maxSpeed = Math.max(fixedSpeed ?? 0, adaptiveSpeed ?? 0, 1)
+  const maxTrips = Math.max(fixedTrips ?? 0, adaptiveTrips ?? 0, 1)
+
+  return {
+    ...base,
+    description: "Generated UXsim outputs from the 4-intersection DQL experiment. Falls back to bundled metrics until a new pipeline run writes fresh CSV artifacts.",
+    comparisonData: [
+      { metric: "Avg Speed (m/s)", fixed: fixedSpeed ?? 0, adaptive: adaptiveSpeed ?? 0 },
+      { metric: "Delay (s)", fixed: fixedDelay ?? 0, adaptive: adaptiveDelay ?? 0 },
+      { metric: "Trips Done", fixed: fixedTrips ?? 0, adaptive: adaptiveTrips ?? 0 },
+    ],
+    radarData: [
+      { metric: "Speed", fixed: Math.round(((fixedSpeed ?? 0) / maxSpeed) * 100), adaptive: Math.round(((adaptiveSpeed ?? 0) / maxSpeed) * 100), fullMark: 100 },
+      { metric: "Throughput", fixed: Math.round(((fixedTrips ?? 0) / maxTrips) * 100), adaptive: Math.round(((adaptiveTrips ?? 0) / maxTrips) * 100), fullMark: 100 },
+      { metric: "Low Delay", fixed: Math.max(0, Math.round(100 - (fixedDelay ?? 1000) / 10)), adaptive: Math.max(0, Math.round(100 - (adaptiveDelay ?? 1000) / 10)), fullMark: 100 },
+      { metric: "Completion", fixed: Math.round(fixedCompletionPct), adaptive: Math.round(adaptiveCompletionPct), fullMark: 100 },
+    ],
+    statCards: [
+      { label: "Speed Improvement", value: `${formatNumber(speedImprovement, 2)}x`, detail: `${formatNumber(fixedSpeed, 2)} -> ${formatNumber(adaptiveSpeed, 2)} m/s`, icon: TrendingUp, color: "text-emerald-500" },
+      { label: "Delay Reduction", value: `${formatNumber(delayReduction, 1)}%`, detail: `${formatNumber(fixedDelay, 0)}s -> ${formatNumber(adaptiveDelay, 0)}s`, icon: TrendingDown, color: "text-blue-500" },
+      { label: "Trips Completed", value: formatNumber(adaptiveTrips, 0), detail: `vs ${formatNumber(fixedTrips, 0)} fixed`, icon: Users, color: "text-violet-500" },
+      { label: "Best Episode", value: formatNumber(num(adaptive.best_training_episode), 0), detail: `${formatNumber(num(adaptive.best_training_delay), 1)}s training delay`, icon: Clock, color: "text-amber-500" },
+    ],
+  }
+}
+
 export function SignalControlSection({ topology = "intersection" }: { topology?: TopologyId }) {
-  const data = SIGNAL_DATA[topology]
+  const [summary, setSummary] = useState<SimulationSummary | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch("http://localhost:8000/simulation/summary", { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => setSummary(payload))
+      .catch(() => setSummary(null))
+    return () => controller.abort()
+  }, [])
+
+  const data = useMemo(() => {
+    const base = SIGNAL_DATA[topology]
+    return topology === "intersection" || topology === "signalised"
+      ? buildDataBackedSignal(base, summary)
+      : base
+  }, [summary, topology])
 
   return (
     <Card>

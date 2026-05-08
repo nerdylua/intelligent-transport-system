@@ -23,7 +23,6 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Switch } from "@/components/ui/switch"
 
 const navItems = [
   { title: "Overview", href: "/simulation", icon: Activity },

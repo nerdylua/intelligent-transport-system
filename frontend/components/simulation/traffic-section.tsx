@@ -800,7 +800,7 @@ const posHighwayMerge: PosFromProgressFn = (v, p, W, H) => {
 }
 
 // Highway merge collision detection
-const tickHighwayMerge: TickFn = (vehicles, _frame, W, H) => {
+const tickHighwayMerge: TickFn = (vehicles) => {
   const BASE_SPEED = 0.004
   const MIN_GAP = 0.09
   const MERGE_ZONE_START = 0.5

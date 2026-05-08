@@ -1,9 +1,11 @@
 import asyncio
+import csv
 import json
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +20,8 @@ app.add_middleware(
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VENV_PYTHON = str(PROJECT_ROOT / ".venv" / "Scripts" / "python.exe")
+UXSIM_OUTPUT = PROJECT_ROOT / "simulation" / "uxsim" / "output"
+SUMO_DIR = PROJECT_ROOT / "simulation" / "sumo"
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -92,6 +96,14 @@ async def health():
         "python": VENV_PYTHON,
         "project_root": str(PROJECT_ROOT),
         "pipelines": list(PIPELINES.keys()),
+    }
+
+
+@app.get("/simulation/summary")
+async def simulation_summary():
+    return {
+        "uxsim": _read_uxsim_summary(),
+        "sumo": _read_sumo_summary(),
     }
 
 
@@ -187,7 +199,7 @@ async def ws_endpoint(websocket: WebSocket):
                     await send({
                         "type": "log",
                         "pipeline": pipeline_id,
-                        "line": "Already running — stop it first",
+                        "line": "Already running - stop it first",
                         "ts": _ts(),
                     })
                 else:
@@ -215,6 +227,170 @@ async def ws_endpoint(websocket: WebSocket):
 
 def _ts() -> str:
     return datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+
+def _read_uxsim_summary() -> dict:
+    metrics_path = UXSIM_OUTPUT / "metrics.csv"
+    fixed_path = UXSIM_OUTPUT / "fixed_metrics.csv"
+    rows = _read_csv_dicts(metrics_path) or _read_csv_dicts(fixed_path)
+    modes = {row.get("mode", f"row_{i}"): row for i, row in enumerate(rows)}
+
+    fixed = modes.get("fixed")
+    adaptive = modes.get("adaptive_dql")
+    comparison = None
+    if fixed and adaptive:
+        fixed_delay = _float(fixed.get("avg_delay_s"))
+        adaptive_delay = _float(adaptive.get("avg_delay_s"))
+        fixed_speed = _float(fixed.get("avg_speed_mps"))
+        adaptive_speed = _float(adaptive.get("avg_speed_mps"))
+        fixed_completed = _float(fixed.get("trips_completed"))
+        adaptive_completed = _float(adaptive.get("trips_completed"))
+        comparison = {
+            "speed_improvement": _ratio(adaptive_speed, fixed_speed),
+            "delay_reduction_pct": _pct_reduction(fixed_delay, adaptive_delay),
+            "completion_improvement": _ratio(adaptive_completed, fixed_completed),
+        }
+
+    artifacts = {
+        name: _artifact_info(UXSIM_OUTPUT / name)
+        for name in [
+            "metrics.csv",
+            "fixed_metrics.csv",
+            "training_curve.png",
+            "fixed_anim.gif",
+            "adaptive_anim.gif",
+        ]
+    }
+
+    return {
+        "metrics_path": str(metrics_path.relative_to(PROJECT_ROOT)),
+        "rows": rows,
+        "comparison": comparison,
+        "artifacts": artifacts,
+    }
+
+
+def _read_sumo_summary() -> dict:
+    carmen_path = SUMO_DIR / "output" / "carmen_sumo.log"
+    scan_count = 0
+    ray_count = None
+    start_ts = None
+    end_ts = None
+
+    if carmen_path.exists():
+        with carmen_path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if not line.startswith("FLASER "):
+                    continue
+                parts = line.split()
+                scan_count += 1
+                if len(parts) > 1 and ray_count is None:
+                    ray_count = _int(parts[1])
+                if len(parts) >= 10:
+                    ts = _float(parts[-3])
+                    if ts is not None:
+                        start_ts = ts if start_ts is None else min(start_ts, ts)
+                        end_ts = ts if end_ts is None else max(end_ts, ts)
+
+    return {
+        "config": _read_sumo_config(),
+        "carmen": {
+            "path": str(carmen_path.relative_to(PROJECT_ROOT)),
+            "exists": carmen_path.exists(),
+            "bytes": carmen_path.stat().st_size if carmen_path.exists() else 0,
+            "scan_count": scan_count,
+            "rays_per_scan": ray_count,
+            "duration_s": round(end_ts - start_ts, 2) if start_ts is not None and end_ts is not None else None,
+        },
+    }
+
+
+def _read_sumo_config() -> dict:
+    config_path = SUMO_DIR / "simulation.sumocfg"
+    route_path = SUMO_DIR / "routes.rou.xml"
+    net_path = SUMO_DIR / "network.net.xml"
+    summary: dict = {
+        "config_path": str(config_path.relative_to(PROJECT_ROOT)),
+        "step_length_s": None,
+        "begin_s": None,
+        "end_s": None,
+        "routes": 0,
+        "flows": 0,
+        "traffic_light_phases": 0,
+    }
+
+    try:
+        cfg_root = ET.parse(config_path).getroot()
+        for key, tag in [("step_length_s", "step-length"), ("begin_s", "begin"), ("end_s", "end")]:
+            node = cfg_root.find(f".//{tag}")
+            summary[key] = _float(node.attrib.get("value")) if node is not None else None
+    except (ET.ParseError, OSError):
+        pass
+
+    try:
+        route_root = ET.parse(route_path).getroot()
+        summary["routes"] = len(route_root.findall("route"))
+        summary["flows"] = len(route_root.findall("flow"))
+    except (ET.ParseError, OSError):
+        pass
+
+    try:
+        net_root = ET.parse(net_path).getroot()
+        summary["traffic_light_phases"] = len(net_root.findall(".//tlLogic/phase"))
+    except (ET.ParseError, OSError):
+        pass
+
+    return summary
+
+
+def _read_csv_dicts(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open("r", newline="", encoding="utf-8") as f:
+        return [{k: _coerce(v) for k, v in row.items()} for row in csv.DictReader(f)]
+
+
+def _artifact_info(path: Path) -> dict:
+    return {
+        "path": str(path.relative_to(PROJECT_ROOT)),
+        "exists": path.exists(),
+        "bytes": path.stat().st_size if path.exists() else 0,
+    }
+
+
+def _coerce(value: str | None):
+    if value is None or value == "":
+        return None
+    number = _float(value)
+    if number is None:
+        return value
+    return int(number) if number.is_integer() else number
+
+
+def _float(value) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _int(value) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _ratio(numerator: float | None, denominator: float | None) -> float | None:
+    if numerator is None or denominator in (None, 0):
+        return None
+    return round(numerator / denominator, 2)
+
+
+def _pct_reduction(before: float | None, after: float | None) -> float | None:
+    if before in (None, 0) or after is None:
+        return None
+    return round((before - after) / before * 100, 1)
 
 
 if __name__ == "__main__":
