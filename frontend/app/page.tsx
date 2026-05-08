@@ -80,7 +80,7 @@ export default function Home() {
             <p className="mx-auto max-w-[455px] text-[1.025rem] text-[#71717a] leading-[1.65] tracking-[-0.015em] font-normal mb-8">
               Run microscopic vehicle models, test decentralized AI routing, and evaluate smart intersections with ultra-low latency hardware acceleration.
             </p>
-            <div className="flex justify-center gap-2.5 items-center mb-14">
+            <div className="flex justify-center gap-2.5 items-center mb-2">
               <RainbowButton asChild className="rounded-lg h-auto px-[22px] py-[10px] text-[0.875rem] font-medium tracking-[-0.022em]">
                 <Link href="/simulation">
                   Start Simulation
@@ -94,15 +94,22 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="w-full max-w-[1020px] min-h-[500px] lg:min-h-[700px] overflow-hidden rounded-[13px] border border-zinc-300 bg-zinc-50 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_16px_rgba(0,0,0,0.05),0_24px_60px_rgba(0,0,0,0.08)] flex items-center justify-center relative transition-all duration-300 ease-out hover:border-zinc-400 hover:shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_20px_rgba(0,0,0,0.07),0_28px_70px_rgba(0,0,0,0.1)]">
-              <Image
-                src="/arch.png"
-                alt="FPGA-centric model architecture: LiDAR acquisition through PYNQ acceleration to visualization"
-                fill
-                className="object-contain p-6 md:p-10"
-                sizes="(max-width: 1020px) 100vw, 1020px"
-                priority
-              />
+            <div className="mt-12 w-full max-w-[1020px] overflow-hidden rounded-[13px] border border-zinc-300 bg-zinc-50 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_16px_rgba(0,0,0,0.05),0_24px_60px_rgba(0,0,0,0.08)] flex flex-col transition-all duration-300 ease-out hover:border-zinc-400 hover:shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_20px_rgba(0,0,0,0.07),0_28px_70px_rgba(0,0,0,0.1)]">
+              <div className="border-b border-zinc-200/90 bg-white/60 px-5 py-3 md:px-8 md:py-3.5 text-left">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                  Architecture diagram
+                </p>
+              </div>
+              <div className="relative min-h-[460px] lg:min-h-[620px] w-full">
+                <Image
+                  src="/arch.png"
+                  alt="FPGA-centric model architecture: LiDAR acquisition through PYNQ acceleration to visualization"
+                  fill
+                  className="object-contain p-6 md:p-10"
+                  sizes="(max-width: 1020px) 100vw, 1020px"
+                  priority
+                />
+              </div>
             </div>
           </div>
         </section>
