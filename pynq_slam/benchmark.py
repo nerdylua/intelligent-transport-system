@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from parse_carmen import parse_carmen_log
 from slam_cpu_baseline import run_slam_cpu
 
+USE_FPGA = os.environ.get("USE_FPGA", "0") == "1"
+
 REPORTED_SPEEDUP = 2779  # from Report.pdf: CPU 0.803s -> FPGA 0.000289s
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
@@ -113,7 +115,7 @@ def run_benchmark(
     output_dir: str | None = None,
 ) -> dict:
     """
-    Run CPU SLAM, compute results, and generate timing comparison.
+    Run CPU or FPGA SLAM, compute results, and generate timing comparison.
     """
     if output_dir is None:
         output_dir = OUTPUT_DIR
@@ -124,32 +126,53 @@ def run_benchmark(
     scans = scans[:max_scans]
     print(f"Benchmarking on {len(scans)} scans\n")
 
-    print("=" * 50)
-    print("Running CPU baseline SLAM (CSM-only timing)...")
-    print("=" * 50)
-    traj_cpu, occ_cpu, timings_cpu, grid_obj = run_slam_cpu(scans)
-
-    csm_timings = [t for t in timings_cpu if t > 0]
-    cpu_avg_ms = float(np.mean(csm_timings)) * 1000 if csm_timings else 0.0
-    cpu_total_s = float(np.sum(timings_cpu))
-
-    fpga_avg_ms = cpu_avg_ms / REPORTED_SPEEDUP
-    fpga_total_s = cpu_total_s / REPORTED_SPEEDUP
+    # Try FPGA first if USE_FPGA=1
+    traj_cpu = None
+    occ_cpu = None
+    timings_cpu = []
+    cpu_avg_ms = 0.0
+    cpu_total_s = 0.0
+    fpga_avg_ms = 0.0
+    fpga_total_s = 0.0
     fpga_source = "estimated_from_reported_speedup"
+    grid_obj = None
 
-    try:
-        from slam_fpga import run_slam_fpga, USE_FPGA as FPGA_ACTIVE
-        if FPGA_ACTIVE:
-            print("\n" + "=" * 50)
+    if USE_FPGA:
+        try:
+            from slam_fpga import run_slam_fpga
+            print("=" * 50)
             print("Running FPGA-accelerated SLAM...")
             print("=" * 50)
-            traj_fpga, occ_fpga, timings_fpga = run_slam_fpga(scans)
-            fpga_csm = [t for t in timings_fpga if t > 0]
-            fpga_avg_ms = float(np.mean(fpga_csm)) * 1000 if fpga_csm else 0.0
-            fpga_total_s = float(np.sum(timings_fpga))
+            traj_cpu, occ_cpu, timings_cpu = run_slam_fpga(scans)
+            csm_timings = [t for t in timings_cpu if t > 0]
+            fpga_avg_ms = float(np.mean(csm_timings)) * 1000 if csm_timings else 0.0
+            fpga_total_s = float(np.sum(timings_cpu))
             fpga_source = "measured"
-    except ImportError:
-        pass
+            
+            # For CPU baseline estimate, run it in parallel for comparison
+            print("\n" + "=" * 50)
+            print("Running CPU baseline SLAM (CSM-only timing)...")
+            print("=" * 50)
+            _, occ_cpu_baseline, timings_cpu_baseline, grid_obj = run_slam_cpu(scans)
+            csm_timings_cpu = [t for t in timings_cpu_baseline if t > 0]
+            cpu_avg_ms = float(np.mean(csm_timings_cpu)) * 1000 if csm_timings_cpu else 0.0
+            cpu_total_s = float(np.sum(timings_cpu_baseline))
+        except ImportError as e:
+            print(f"FPGA import failed ({e}), falling back to CPU only")
+            USE_FPGA = False
+    
+    if not USE_FPGA or traj_cpu is None:
+        # Run CPU baseline if not using FPGA
+        print("=" * 50)
+        print("Running CPU baseline SLAM (CSM-only timing)...")
+        print("=" * 50)
+        traj_cpu, occ_cpu, timings_cpu, grid_obj = run_slam_cpu(scans)
+        csm_timings = [t for t in timings_cpu if t > 0]
+        cpu_avg_ms = float(np.mean(csm_timings)) * 1000 if csm_timings else 0.0
+        cpu_total_s = float(np.sum(timings_cpu))
+        fpga_avg_ms = cpu_avg_ms / REPORTED_SPEEDUP
+        fpga_total_s = cpu_total_s / REPORTED_SPEEDUP
+        fpga_source = "estimated_from_reported_speedup"
 
     actual_speedup = cpu_avg_ms / fpga_avg_ms if fpga_avg_ms > 0 else REPORTED_SPEEDUP
 
