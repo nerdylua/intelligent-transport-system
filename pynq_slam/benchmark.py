@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -14,6 +15,7 @@ from slam_cpu_baseline import run_slam_cpu
 REPORTED_SPEEDUP = 2779  # from Report.pdf: CPU 0.803s -> FPGA 0.000289s
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+DEFAULT_LOG_PATH = str((Path(__file__).resolve().parent.parent / "lidar_dataset" / "intel.log.txt"))
 
 
 def _plot_comparison(results: dict, output_dir: str) -> None:
@@ -205,6 +207,6 @@ def run_benchmark(
 
 
 if __name__ == "__main__":
-    log_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join("..", "intel.log.txt")
+    log_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_LOG_PATH
     max_scans = int(sys.argv[2]) if len(sys.argv) > 2 else 200
     run_benchmark(log_path, max_scans)

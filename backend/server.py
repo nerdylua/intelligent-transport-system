@@ -25,14 +25,21 @@ PIPELINES = {
     "sumo": {
         "name": "SUMO Traffic Simulation",
         "script": str(PROJECT_ROOT / "simulation" / "sumo" / "run_sumo.py"),
+        "cwd": str(PROJECT_ROOT / "simulation" / "sumo"),
     },
     "dql": {
         "name": "DQL Adaptive Signal Training",
         "script": str(PROJECT_ROOT / "simulation" / "uxsim" / "adaptive_signal_dql.py"),
+        "cwd": str(PROJECT_ROOT / "simulation" / "uxsim"),
     },
     "slam": {
         "name": "SLAM Benchmark",
         "script": str(PROJECT_ROOT / "pynq_slam" / "benchmark.py"),
+        "cwd": str(PROJECT_ROOT / "pynq_slam"),
+        "args": [
+            str(PROJECT_ROOT / "lidar_dataset" / "intel.log.txt"),
+            "200",
+        ],
     },
 }
 
@@ -102,6 +109,8 @@ async def ws_endpoint(websocket: WebSocket):
     async def run_pipeline(pipeline_id: str):
         config = PIPELINES[pipeline_id]
         script = config["script"]
+        script_args = [str(a) for a in config.get("args", [])]
+        working_dir = str(config.get("cwd", PROJECT_ROOT))
 
         await send({"type": "status", "pipeline": pipeline_id, "status": "running"})
         await send({
@@ -113,10 +122,10 @@ async def ws_endpoint(websocket: WebSocket):
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                VENV_PYTHON, "-u", script,
+                VENV_PYTHON, "-u", script, *script_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=str(PROJECT_ROOT),
+                cwd=working_dir,
             )
             processes[pipeline_id] = proc
 

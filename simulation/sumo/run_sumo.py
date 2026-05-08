@@ -18,6 +18,7 @@ if "SUMO_HOME" in os.environ:
     sys.path.append(os.path.join(os.environ["SUMO_HOME"], "tools"))
 
 import traci
+import sumolib
 from carmen_writer import write_carmen_log
 
 # ── Ray-casting parameters (must match intel.log.txt format) ──
@@ -129,7 +130,11 @@ def cast_rays(
 
 
 def run_simulation(sumocfg: str, output_path: str, use_gui: bool = False) -> None:
-    sumo_bin = "sumo-gui" if use_gui else "sumo"
+    sumocfg = os.path.abspath(sumocfg)
+    sumo_bin_name = "sumo-gui" if use_gui else "sumo"
+    sumo_bin = sumolib.checkBinary(sumo_bin_name)
+    print(f"Using SUMO binary: {sumo_bin}")
+    print(f"Using config: {sumocfg}")
     traci.start([sumo_bin, "-c", sumocfg, "--step-length", "0.1"])
 
     ego_id = "ego_0"
