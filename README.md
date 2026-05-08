@@ -134,7 +134,11 @@ Trains a Deep Q-Learning agent (3-layer MLP, experience replay, epsilon-greedy) 
 python pynq_slam/benchmark.py [log_path] [max_scans]
 
 # With FPGA hardware (requires PYNQ-Z2)
-USE_FPGA=1 python pynq_slam/slam_fpga.py [log_path] [max_scans]
+# Place csm_batch_accel.bit and csm_batch_accel.hwh in pynq_slam/
+USE_FPGA=1 python pynq_slam/benchmark.py [log_path] [max_scans]
+
+# If bitstream is stored elsewhere:
+CSM_ACCEL_BIT=/absolute/path/to/csm_batch_accel.bit USE_FPGA=1 python pynq_slam/benchmark.py [log_path] [max_scans]
 ```
 
 Runs correlative scan matching on the Intel Research Lab dataset. The CPU baseline searches ~4,851 pose candidates per scan; the FPGA accelerator achieves a 2,779x speedup via HLS-synthesized parallel evaluation on the Zynq-7000 SoC.

@@ -136,8 +136,9 @@ def run_benchmark(
     fpga_total_s = 0.0
     fpga_source = "estimated_from_reported_speedup"
     grid_obj = None
+    fpga_available = USE_FPGA
 
-    if USE_FPGA:
+    if fpga_available:
         try:
             from slam_fpga import run_slam_fpga
             print("=" * 50)
@@ -159,9 +160,9 @@ def run_benchmark(
             cpu_total_s = float(np.sum(timings_cpu_baseline))
         except ImportError as e:
             print(f"FPGA import failed ({e}), falling back to CPU only")
-            USE_FPGA = False
+            fpga_available = False
     
-    if not USE_FPGA or traj_cpu is None:
+    if not fpga_available or traj_cpu is None:
         # Run CPU baseline if not using FPGA
         print("=" * 50)
         print("Running CPU baseline SLAM (CSM-only timing)...")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import time
+from pathlib import Path
 import numpy as np
 from parse_carmen import parse_carmen_log
 from preprocess import (
@@ -13,6 +14,8 @@ from preprocess import (
 from slam_cpu_baseline import generate_candidates, score_candidate
 
 USE_FPGA = os.environ.get("USE_FPGA", "0") == "1"
+BITSTREAM_ENV_VAR = "CSM_ACCEL_BIT"
+DEFAULT_BITSTREAM = Path(__file__).resolve().parent / "csm_batch_accel.bit"
 
 
 def _init_fpga() -> dict:
@@ -22,7 +25,23 @@ def _init_fpga() -> dict:
     """
     from pynq import Overlay, allocate
 
-    overlay = Overlay("csm_accel.bit")
+    bitstream = Path(os.environ.get(BITSTREAM_ENV_VAR, str(DEFAULT_BITSTREAM))).expanduser()
+    if not bitstream.is_absolute():
+        bitstream = (Path.cwd() / bitstream).resolve()
+    if not bitstream.exists():
+        raise FileNotFoundError(
+            f"Bitstream not found: {bitstream}. "
+            f"Set {BITSTREAM_ENV_VAR}=/absolute/path/to/csm_batch_accel.bit"
+        )
+
+    hwh_path = bitstream.with_suffix(".hwh")
+    if not hwh_path.exists():
+        raise FileNotFoundError(
+            f"HWH metadata not found: {hwh_path}. "
+            "Ensure .bit and .hwh share the same basename."
+        )
+
+    overlay = Overlay(str(bitstream))
     csm_ip = overlay.csm_batch_accel_0
     dma_scan = overlay.axi_dma_scan
     dma_map = overlay.axi_dma_map
@@ -35,6 +54,7 @@ def _init_fpga() -> dict:
 
     return {
         "overlay": overlay,
+        "bitstream_path": str(bitstream),
         "csm_ip": csm_ip,
         "dma_scan": dma_scan,
         "dma_map": dma_map,
@@ -102,7 +122,7 @@ def run_slam_fpga(
         try:
             hw = _init_fpga()
             if verbose:
-                print("FPGA overlay loaded successfully")
+                print(f"FPGA overlay loaded successfully ({hw['bitstream_path']})")
         except Exception as e:
             print(f"FPGA init failed ({e}), falling back to CPU")
             hw = None
