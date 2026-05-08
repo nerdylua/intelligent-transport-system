@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch"
 const navItems = [
   { title: "Overview", href: "/simulation", icon: Activity },
   { title: "Pipeline", href: "/pipeline", icon: Terminal },
-  // { title: "Visualization", href: "/visualization", icon: View },
+  { title: "Visualization", href: "/visualization", icon: View },
 ]
 
 export function AppSidebar() {
