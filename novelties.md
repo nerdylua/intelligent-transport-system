@@ -2,7 +2,7 @@
 
 ## 1. Performance-Per-Watt at Embedded Scale
 
-The real argument isn't speed alone — it's **speed per dollar per watt**. An NVIDIA Jetson AGX draws 10–30W and costs $500–$1000+. The PYNQ-Z2 draws ~1.5–2.5W total and costs ~$65–$130. Yet the system achieves **2779x speedup** over CPU, bringing average CSM time from **0.8031s/scan → 0.000289s/scan**. At 0.8s/scan the robot is always 800ms behind reality — real-time navigation is impossible. At 0.289ms/scan it comfortably meets real-time constraints. No prior work at this price-power point demonstrates this magnitude of speedup for CSM on a Zynq-class device.
+The real argument isn't speed alone — it's **speed per dollar per watt**. An NVIDIA Jetson AGX draws 10–30W and costs $500–$1000+. The PYNQ-Z2 draws ~1.5–2.5W total and costs ~$65–$130. Yet the system achieves **213x speedup** over CPU, bringing average CSM time from **0.8031s/scan → 0.00377s/scan**. At 0.8s/scan the robot is always 800ms behind reality — real-time navigation is impossible. At 3.77ms/scan it comfortably meets real-time constraints. No prior work at this price-power point demonstrates this magnitude of speedup for CSM on a Zynq-class device.
 
 
 ## 2. Surgical Offloading — Only CSM, Not Everything
@@ -24,7 +24,7 @@ On discrete CPU+FPGA systems, PCIe communication eats hundreds of microseconds. 
 - FPGA pulls the map window into **on-chip BRAM** (single-cycle access) for the duration of scan matching — avoids DDR latency inside the tight correlation loop
 - Result pose 3-tuple written back, CPU reads after `recvchannel.wait()`
 
-Transfer overhead is negligible (few KB scan, few hundred KB map window) relative to the 2779x compute gain.
+Transfer overhead is negligible (few KB scan, few hundred KB map window) relative to the 213x compute gain.
 
 
 ## 4. Dual Input — Real + Synthetic Data

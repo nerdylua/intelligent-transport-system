@@ -14,7 +14,7 @@ from slam_cpu_baseline import run_slam_cpu
 
 USE_FPGA = os.environ.get("USE_FPGA", "0") == "1"
 
-REPORTED_SPEEDUP = 2779  # from Report.pdf: CPU 0.803s -> FPGA 0.000289s
+REPORTED_SPEEDUP = 213  # from Report.pdf: CPU 0.803s -> FPGA 0.00377s
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
 DEFAULT_LOG_PATH = str((Path(__file__).resolve().parent.parent / "lidar_dataset" / "intel.log.txt"))

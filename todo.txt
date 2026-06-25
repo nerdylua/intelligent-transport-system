@@ -1,1 +1,0 @@
-[ ] Test slam cpu vs fpga (pynq board) # the speedup value is way wrong, fix after testing everywhere

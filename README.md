@@ -44,7 +44,7 @@ Interactive dashboard with four animated sections:
 - **Traffic Simulation** -- Canvas-rendered SUMO traffic across four topologies: 4-way intersection, signalised intersection (with animated signal phases), roundabout, and highway merge. Each view renders an ego vehicle with a LiDAR scan cone and surrounding traffic.
 - **Adaptive Signal Control** -- Side-by-side comparison of DQL-trained adaptive signals vs fixed-timing baselines. Displays speed improvement (4x), delay reduction (64%), and trip completion rates via bar and radar charts.
 - **LiDAR SLAM Pipeline** -- Animated 7-stage pipeline visualization: noise filter, polar-to-Cartesian, discretization, occupancy grid, likelihood field, correlative scan matching, and map update.
-- **FPGA Acceleration Benchmark** -- Animated counters and charts showing 2,779x speedup for scan matching (CPU: 454.7ms vs FPGA: 0.164ms per scan), with breakdowns by acceleration source (parallel candidate evaluation, BRAM, pipelining, DMA).
+- **FPGA Acceleration Benchmark** -- Animated counters and charts showing 213x speedup for scan matching (CPU: 454.7ms vs FPGA: 2.135ms per scan), with breakdowns by acceleration source (parallel candidate evaluation, BRAM, pipelining, DMA).
 
 ### Pipeline Runner (`/pipeline`)
 
@@ -141,7 +141,7 @@ USE_FPGA=1 python pynq_slam/benchmark.py [log_path] [max_scans]
 CSM_ACCEL_BIT=/absolute/path/to/csm_batch_accel.bit USE_FPGA=1 python pynq_slam/benchmark.py [log_path] [max_scans]
 ```
 
-Runs correlative scan matching on the Intel Research Lab dataset. The CPU baseline searches ~4,851 pose candidates per scan; the FPGA accelerator achieves a 2,779x speedup via HLS-synthesized parallel evaluation on the Zynq-7000 SoC.
+Runs correlative scan matching on the Intel Research Lab dataset. The CPU baseline searches ~4,851 pose candidates per scan; the FPGA accelerator achieves a 213x speedup via HLS-synthesized parallel evaluation on the Zynq-7000 SoC.
 
 ### Data Preprocessing
 
@@ -171,9 +171,9 @@ python scripts/preprocess_kitti.py [-s 0005|0093] [-p max_points]
 
 | Metric | Value |
 |---|---|
-| FPGA vs CPU speedup (scan matching) | 2,779x |
+| FPGA vs CPU speedup (scan matching) | 213x |
 | CPU CSM latency | 454.7 ms/scan |
-| FPGA CSM latency | 0.164 ms/scan |
+| FPGA CSM latency | 2.135 ms/scan |
 | Adaptive vs fixed signal -- delay reduction | 64% |
 | Adaptive vs fixed signal -- speed improvement | 4.0x |
 | Adaptive vs fixed signal -- trip completions | 4.0x more |

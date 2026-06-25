@@ -11,8 +11,8 @@ import {
 } from "recharts"
 
 const CPU_AVG_MS = 454.7
-const FPGA_AVG_MS = 0.164
-const SPEEDUP = 2779
+const FPGA_AVG_MS = 2.135
+const SPEEDUP = 213
 const TOTAL_SCANS = 200
 
 const timelineData = Array.from({ length: 50 }, (_, i) => {

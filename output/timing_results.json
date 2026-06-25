@@ -108,12 +108,12 @@
     ]
   },
   "fpga": {
-    "avg_ms_per_scan": 0.048277,
-    "total_seconds": 0.004828,
+    "avg_ms_per_scan": 0.629873,
+    "total_seconds": 0.062986,
     "source": "estimated_from_reported_speedup"
   },
-  "speedup": 2779.0,
-  "reported_speedup": 2779,
+  "speedup": 213.0,
+  "reported_speedup": 213,
   "trajectory_shape": [
     100,
     3
